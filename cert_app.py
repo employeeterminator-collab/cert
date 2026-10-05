@@ -22,12 +22,9 @@ def get_sheets_connection():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    # Uses Streamlit Secrets for secure credential management
     creds_dict = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
-    
-    # Open your exam database spreadsheet
     return client.open("ShisaKanko_Exam_Database")
 
 # ==========================================
@@ -91,24 +88,24 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     jp_date_str = convert_to_japanese_date(exam_end_time)
     
     # ==========================================
-    # Text Insertion Coordinates on Template PDF
-    # (Adjust coordinates X, Y to match your template layout precisely)
+    # Text Insertion Coordinates & Styling
+    # (Using explicit color=(0,0,0) so text renders clearly)
     # ==========================================
     
-    # 1. English Name (e.g., John Doe)
-    page.insert_text(fitz.Point(250, 450), english_name, fontsize=14, fontname="Helvetica")
+    # 1. English Name (John Doe)
+    page.insert_text(fitz.Point(250, 450), english_name, fontsize=14, color=(0, 0, 0))
     
-    # 2. Japanese Name (e.g., ジョン・ドウ)
-    page.insert_text(fitz.Point(250, 480), japanese_name, fontsize=14)
+    # 2. Japanese Name (ジョン・ドウ)
+    page.insert_text(fitz.Point(250, 480), japanese_name, fontsize=14, color=(0, 0, 0))
     
-    # 3. Exam Date (e.g., 2026-10-05)
-    page.insert_text(fitz.Point(250, 510), exam_end_time, fontsize=12, fontname="Helvetica")
+    # 3. Exam Date (2026-10-05)
+    page.insert_text(fitz.Point(250, 510), exam_end_time, fontsize=12, color=(0, 0, 0))
     
-    # 4. Japanese Date Kanji (e.g., 令和八年十月五日)
-    page.insert_text(fitz.Point(250, 540), jp_date_str, fontsize=12)
+    # 4. Japanese Kanji Date (令和八年十月五日)
+    page.insert_text(fitz.Point(250, 540), jp_date_str, fontsize=12, color=(0, 0, 0))
     
-    # 5. Voucher Code / Certificate Number (e.g., SK00001TEST)
-    page.insert_text(fitz.Point(450, 570), voucher_code, fontsize=11, fontname="Helvetica")
+    # 5. Voucher Code / Certificate Number (SK00001TEST)
+    page.insert_text(fitz.Point(450, 570), voucher_code, fontsize=11, color=(0, 0, 0))
     
     doc.save(output_pdf_path)
     doc.close()
@@ -132,25 +129,18 @@ if st.button("🔍 Look Up Certificate", type="primary", use_container_width=Tru
                 sheet = db.worksheet("Vouchers")
                 records = sheet.get_all_records()
                 
-                # Search for matching voucher code in records
                 matched_record = None
                 for row in records:
-                    # Check common voucher key names in Google Sheet
                     v_code = str(row.get("VoucherCode", row.get("Voucher Code", ""))).strip()
                     if v_code.upper() == voucher_input.upper():
                         matched_record = row
                         break
                 
                 if matched_record:
-                    # Check if candidate passed
-                    status = str(matched_record.get("Status", matched_record.get("ExamStatus", ""))).strip()
-                    
-                    # Map columns based on your schema instructions:
-                    # Col6: EnglishFirstName, Col7: EnglishLastName, Col12: ExamEndTime, JapaneseName, VoucherCode
                     headers = sheet.row_values(1)
-                    row_vals = sheet.row_values(sheet.find(voucher_input).row)
+                    cell = sheet.find(voucher_input)
+                    row_vals = sheet.row_values(cell.row) if cell else []
                     
-                    # Helper to safely get values by header name or index position
                     def get_col_val(col_name_keyword, col_index_1_based):
                         for idx, h in enumerate(headers):
                             if col_name_keyword.lower() in h.lower():
@@ -161,21 +151,20 @@ if st.button("🔍 Look Up Certificate", type="primary", use_container_width=Tru
                         return ""
 
                     candidate_data = {
-                        "EnglishFirstName": get_col_val("FirstName", 6),
-                        "EnglishLastName": get_col_val("LastName", 7),
-                        "JapaneseName": get_col_val("JapaneseName", 9), # Adjust index if needed
-                        "ExamEndTime": get_col_val("EndTime", 12),
+                        "EnglishFirstName": get_col_val("EnglishFirstName", 6),
+                        "EnglishLastName": get_col_val("EnglishLastName", 7),
+                        "JapaneseName": get_col_val("JapaneseName", 9),
+                        "ExamEndTime": get_col_val("ExamEndTime", 12),
                         "VoucherCode": voucher_input
                     }
                     
                     st.success(f"✅ Verified record found for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
                     
-                    # Generate PDF on the fly
                     template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
                     output_filename = f"Certificate_{voucher_input}.pdf"
                     
                     if not os.path.exists(template_filename):
-                        st.error(f"❌ Certificate template file '{template_filename}' not found in the app directory. Please upload it to your project root.")
+                        st.error(f"❌ Certificate template file '{template_filename}' not found in the app directory. Please make sure it is committed to your repository root.")
                     else:
                         generated_pdf_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
                         
