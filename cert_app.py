@@ -9,7 +9,7 @@ from google.oauth2.service_account import Credentials
 # Page Configuration
 # ==========================================
 st.set_page_config(
-    page_title="Shisa Kanko-Shi Certificate Generator",
+    page_title="Shisa Kanko-Shi Certificate Portal",
     page_icon="📜",
     layout="centered"
 )
@@ -76,7 +76,6 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     doc = fitz.open(template_pdf_path)
     page = doc[0]  # Single page certificate template
     
-    # Extract fields based on requested column mappings
     first_name = str(candidate_data.get('EnglishFirstName', '')).strip()
     last_name = str(candidate_data.get('EnglishLastName', '')).strip()
     english_name = f"{first_name} {last_name}".strip()
@@ -87,43 +86,69 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     jp_date_str = convert_to_japanese_date(exam_end_time)
     
-    # ==========================================
-    # Text Insertion Coordinates & Styling
-    # (Using explicit color=(0,0,0) so text renders clearly)
-    # ==========================================
+    # Custom font file paths
+    times_font_path = "times.ttf"          # Times New Roman for English
+    yuji_font_path = "YujiSyuku-Regular.ttf" # Yuji Ryuko for Japanese
     
-    # 1. English Name (John Doe)
-    page.insert_text(fitz.Point(250, 450), english_name, fontsize=14, color=(0, 0, 0))
+    has_times = os.path.exists(times_font_path)
+    has_yuji = os.path.exists(yuji_font_path)
+
+    # 1. English Name (Times New Roman)
+    if has_times:
+        page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontfile=times_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="Times-Roman", color=(0, 0, 0))
     
-    # 2. Japanese Name (ジョン・ドウ)
-    page.insert_text(fitz.Point(250, 480), japanese_name, fontsize=14, color=(0, 0, 0))
+    # 2. Japanese Name (Yuji Ryuko)
+    if has_yuji:
+        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, fontfile=yuji_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, color=(0, 0, 0))
     
-    # 3. Exam Date (2026-10-05)
-    page.insert_text(fitz.Point(250, 510), exam_end_time, fontsize=12, color=(0, 0, 0))
+    # 3. Exam Date (Times New Roman)
+    if has_times:
+        page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontfile=times_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontname="Times-Roman", color=(0, 0, 0))
     
-    # 4. Japanese Kanji Date (令和八年十月五日)
-    page.insert_text(fitz.Point(250, 540), jp_date_str, fontsize=12, color=(0, 0, 0))
+    # 4. Japanese Kanji Date (Yuji Ryuko)
+    if has_yuji:
+        page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, fontfile=yuji_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, color=(0, 0, 0))
     
-    # 5. Voucher Code / Certificate Number (SK00001TEST)
-    page.insert_text(fitz.Point(450, 570), voucher_code, fontsize=11, color=(0, 0, 0))
+    # 5. Voucher Code (Times New Roman)
+    if has_times:
+        page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontfile=times_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontname="Times-Roman", color=(0, 0, 0))
     
     doc.save(output_pdf_path)
+    
+    # Convert PDF first page to PNG image for on-screen preview
+    preview_image_path = output_pdf_path.replace(".pdf", ".png")
+    pix = page.get_pixmap(dpi=150)
+    pix.save(preview_image_path)
+    
     doc.close()
-    return output_pdf_path
+    return output_pdf_path, preview_image_path
 
 # ==========================================
 # Streamlit UI App Layout
 # ==========================================
 st.markdown("<h1 style='text-align: center;'>📜 Shisa Kanko-Shi Certificate Portal</h1>", unsafe_allow_html=True)
-st.write("Enter your **Voucher Code** below to verify your passing status and download your official certificate of designation.")
+st.write("Please enter both your **Voucher Code** and registered **Email Address** to retrieve and view your official certificate.")
 
-voucher_input = st.text_input("Voucher Code:", placeholder="e.g., SK00001TEST").strip()
+with st.form("cert_lookup_form"):
+    voucher_input = st.text_input("Voucher Code:", placeholder="e.g., SK00001TEST").strip()
+    email_input = st.text_input("Registered Email Address:", placeholder="e.g., candidate@example.com").strip()
+    submit_btn = st.form_submit_button("🔍 Look Up & Generate Certificate", use_container_width=True)
 
-if st.button("🔍 Look Up Certificate", type="primary", use_container_width=True):
-    if not voucher_input:
-        st.warning("⚠️ Please enter a valid voucher code.")
+if submit_btn:
+    if not voucher_input or not email_input:
+        st.warning("⚠️ Please provide both your Voucher Code and Email Address.")
     else:
-        with st.spinner("Connecting to examination database..."):
+        with st.spinner("Verifying credentials against examination database..."):
             try:
                 db = get_sheets_connection()
                 sheet = db.worksheet("Vouchers")
@@ -132,7 +157,10 @@ if st.button("🔍 Look Up Certificate", type="primary", use_container_width=Tru
                 matched_record = None
                 for row in records:
                     v_code = str(row.get("VoucherCode", row.get("Voucher Code", ""))).strip()
-                    if v_code.upper() == voucher_input.upper():
+                    c_email = str(row.get("Email", row.get("CandidateEmail", row.get("Candidate Email", "")))).strip()
+                    
+                    # Match both Voucher Code and Email (case-insensitive for email)
+                    if v_code.upper() == voucher_input.upper() and c_email.lower() == email_input.lower():
                         matched_record = row
                         break
                 
@@ -158,21 +186,25 @@ if st.button("🔍 Look Up Certificate", type="primary", use_container_width=Tru
                         "VoucherCode": voucher_input
                     }
                     
-                    st.success(f"✅ Verified record found for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
+                    st.success(f"✅ Credentials verified for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
                     
                     template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
                     output_filename = f"Certificate_{voucher_input}.pdf"
                     
                     if not os.path.exists(template_filename):
-                        st.error(f"❌ Certificate template file '{template_filename}' not found in the app directory. Please make sure it is committed to your repository root.")
+                        st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
                     else:
-                        generated_pdf_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
+                        generated_pdf_path, preview_image_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
+                        
+                        st.markdown("---")
+                        st.markdown("### 🖥️ Certificate Preview")
+                        # Display the certificate instantly on screen using the generated image preview
+                        st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
                         
                         with open(generated_pdf_path, "rb") as pdf_file:
                             pdf_bytes = pdf_file.read()
                             
                         st.markdown("---")
-                        st.markdown("### 🎉 Your Certificate is Ready!")
                         st.download_button(
                             label="📥 Download Official Certificate (PDF)",
                             data=pdf_bytes,
@@ -181,7 +213,7 @@ if st.button("🔍 Look Up Certificate", type="primary", use_container_width=Tru
                             use_container_width=True
                         )
                 else:
-                    st.error("❌ No matching record found for this voucher code. Please check your code and try again.")
+                    st.error("❌ No matching record found. Please verify that both your Voucher Code and Email Address are correct.")
             
             except Exception as e:
                 st.error(f"An error occurred while connecting to the database: {e}")
