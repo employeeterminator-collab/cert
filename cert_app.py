@@ -92,7 +92,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
 
     # 2. 安全註冊自訂字型，若無則使用 ReportLab 內建標準字型
     times_font_path = "times.ttf"
-    yuji_font_path = "YujiSyuku.ttf"
+    yuji_font_path = "YujiSyuku-Regular.ttf"
     
     times_font_name = 'Times-Roman'  # 預設內建
     if os.path.exists(times_font_path):
