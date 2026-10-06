@@ -221,7 +221,7 @@ if submit_btn:
                     if exam_status == "dnf":
                         st.error("Exam did not finish, please contact administrator")
                     elif exam_status == "fail":
-                        st.error("❌ Record not found or invalid voucher code.")  # Fail 顯示與找不到記錄相同的訊息
+                        st.error("❌ Record not found or invalid voucher code.")
                     elif exam_status == "pass":
                         # 只有 Pass 才會執行後續的資料處理與證書生成
                         raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
@@ -244,44 +244,33 @@ if submit_btn:
                         
                         st.success(f"✅ Credentials verified successfully!")
                         
-                        # 👉 接下來放你的 PDF 生成與預覽按鈕程式碼
-                        # template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
-                        # ...
+                        template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
+                        output_filename = f"CSCP_Certificate_{voucher_input}.pdf"
                         
+                        if not os.path.exists(template_filename):
+                            st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
+                        else:
+                            generated_pdf_path, preview_image_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
+                            
+                            st.markdown("---")
+                            st.markdown("### 🖥️ Certificate Preview")
+                            st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
+                            
+                            with open(generated_pdf_path, "rb") as pdf_file:
+                                pdf_bytes = pdf_file.read()
+                                
+                            st.markdown("---")
+                            st.download_button(
+                                label="📥 Download Official Certificate (PDF)",
+                                data=pdf_bytes,
+                                file_name=output_filename,
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
                     else:
-                        # 若狀態欄位為空或格式不符，也當作未找到記錄處理
                         st.error("❌ Record not found or invalid voucher code.")
                 else:
-                    st.error("❌ Record not found or invalid voucher code.")
-
-                    
-                    st.success(f"✅ Credentials verified successfully!")
-                    
-                    template_filename = "CSCP Certificate Template Final.pdf"
-                    output_filename = f"CSCP_Certificate_{voucher_input}.pdf"
-                    
-                    if not os.path.exists(template_filename):
-                        st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
-                    else:
-                        generated_pdf_path, preview_image_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
-                        
-                        st.markdown("---")
-                        st.markdown("### 🖥️ Certificate Preview")
-                        st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
-                        
-                        with open(generated_pdf_path, "rb") as pdf_file:
-                            pdf_bytes = pdf_file.read()
-                            
-                        st.markdown("---")
-                        st.download_button(
-                            label="📥 Download Official Certificate (PDF)",
-                            data=pdf_bytes,
-                            file_name=output_filename,
-                            mime="application/pdf",
-                            use_container_width=True
-                        )
-                        else:
-                           st.error("❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct.")
+                    st.error("❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct.")
             
             except Exception as e:
                 st.error(f"An error occurred while connecting to the database: {e}")
