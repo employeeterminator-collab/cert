@@ -139,7 +139,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c.drawCentredString(275, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
-    draw_vertical_text(c, x=814, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
+    draw_vertical_text(c, x=814, y_top=pdf_height - 340, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
@@ -150,7 +150,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     # 5. 證書編號 (橫書置中)
     c.setFont(times_font_name, 11)
-    c.drawCentredString(500, pdf_height -660, voucher_code)
+    c.drawCentredString(510, pdf_height -660, voucher_code)
 
     
     c.save()
