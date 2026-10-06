@@ -3,3 +3,9 @@ PyMuPDF>=1.23.0
 gspread>=5.10.0
 google-auth>=2.0.0
 requests>=2.28.0
+streamlit
+PyMuPDF
+gspread
+oauth2client
+google-auth
+Pillow
