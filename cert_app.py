@@ -136,7 +136,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     # 1. 英文名字 (改用 drawCentredString 實現水平置中，font_size 可自行調整)
     c.setFont(times_font_name, 36)  # 數字 16 是字型大小
-    c.drawCentredString(130, pdf_height - 80, english_name)  # 320 是置中 X 軸
+    c.drawCentredString(190, pdf_height -180, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
     draw_vertical_text(c, x=320, y_top=pdf_height - 520, text=japanese_name, font_name=yuji_font_name, font_size=16)
@@ -150,7 +150,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     # 5. 證書編號 (橫書置中)
     c.setFont(times_font_name, 11)
-    c.drawCentredString(550, pdf_height - 740, voucher_code)
+    c.drawCentredString(550, pdf_height -660, voucher_code)
 
     
     c.save()
