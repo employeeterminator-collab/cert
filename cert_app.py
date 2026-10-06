@@ -171,13 +171,13 @@ if submit_btn:
                         break
 
 
-                     candidate_data = {
+                 candidate_data = {
                         "EnglishFirstName": get_col_val("EnglishFirstName", 6),
                         "EnglishLastName": get_col_val("EnglishLastName", 7),
-                        "JapaneseName": get_col_val("JapaneseName", 9),
+                        "JapaneseName: get_col_val("JapaneseName", 9),
                         "ExamEndTime": get_col_val("ExamEndTime", 12),
                         "VoucherCode": voucher_input
-                    }
+                 }
 
                     
                     st.success(f"✅ Credentials verified for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
