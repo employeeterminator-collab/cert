@@ -293,7 +293,7 @@ if st.session_state.lookup_result:
     st.success(f"✅ Credentials verified successfully!")
 
     # 1. 處理數位徽章下載（置中對齊）
-    badge_template = "CSCP-Badge.png"
+    badge_template = "CPCS-Badge.png"
     badge_output_filename = f"CPCS-Badge-{voucher_input}.png"
     
     if os.path.exists(badge_template):
