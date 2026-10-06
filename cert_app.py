@@ -280,8 +280,8 @@ if submit_btn:
                             mime="application/pdf",
                             use_container_width=True
                         )
-              #  else:
-                 #   st.error("❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct.")
+               else:
+                   st.error("❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct.")
             
             except Exception as e:
                 st.error(f"An error occurred while connecting to the database: {e}")
