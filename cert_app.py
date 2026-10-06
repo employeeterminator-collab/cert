@@ -78,21 +78,25 @@ def convert_to_japanese_date(date_str):
 # ==========================================
 # 輔助函式：日文直書 (Vertical Writing)
 # ==========================================
-# 輔助函式：日文直書 (同時支援水平置中與垂直置中)
-def draw_vertical_text(c, x, y_center, text, font_name, font_size, char_spacing=None):
+# 輔助函式：日文直書（同時完美兼容 y_center 與 y_top）
+def draw_vertical_text(c, x, text, font_name, font_size, char_spacing=None, y_top=None, y_center=None):
     if char_spacing is None:
         char_spacing = font_size * 1.1  # 字與字之間的垂直距離
     
     num_chars = len(text)
-    # 計算整段直書文字的總高度（從第一個字到最後一個字的距離）
     total_height = (num_chars - 1) * char_spacing
     
-    # 自動反推計算起點 y_top，讓整個字串的中心剛好落在傳入的 y_center
-    y_top = y_center + (total_height / 2)
+    # 判斷使用者傳入的是 y_center 還是 y_top
+    if y_center is not None:
+        start_y = y_center + (total_height / 2)  # 以中心點反推起點
+    elif y_top is not None:
+        start_y = y_top                          # 直接使用傳入的頂端起點
+    else:
+        start_y = 0
     
     c.setFont(font_name, font_size)
     for idx, char in enumerate(text):
-        y_pos = y_top - (idx * char_spacing)
+        y_pos = start_y - (idx * char_spacing)
         # 橫向水平置中 (以 x 座標為中心)
         char_width = c.stringWidth(char, font_name, font_size)
         c.drawString(x - (char_width / 2), y_pos, char)
