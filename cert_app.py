@@ -167,27 +167,27 @@ if submit_btn:
                         matched_record = row
                         break
                 
-                if matched_record:
-                    headers = sheet.row_values(1)
-                    cell = sheet.find(voucher_input)
-                    row_vals = sheet.row_values(cell.row) if cell else []
+                                matched_record = None
+                for row in records:
+                    v_code = str(row.get("VoucherCode", row.get("Voucher Code", ""))).strip()
                     
-                    def get_col_val(col_name_keyword, col_index_1_based):
-                        for idx, h in enumerate(headers):
-                            if col_name_keyword.lower() in h.lower():
-                                if idx < len(row_vals):
-                                    return row_vals[idx]
-                        if col_index_1_based - 1 < len(row_vals):
-                            return row_vals[col_index_1_based - 1]
-                        return ""
+                    # Explicitly check AssignedEmail as named in your spreadsheet
+                    c_email = str(row.get("AssignedEmail", row.get("Email", ""))).strip().replace("\n", "")
+                    
+                    # Match both Voucher Code and Email (case-insensitive for email)
+                    if v_code.upper() == voucher_input.upper() and c_email.lower() == email_input.lower():
+                        matched_record = row
+                        break
 
-                    candidate_data = {
+
+                                        candidate_data = {
                         "EnglishFirstName": get_col_val("EnglishFirstName", 6),
                         "EnglishLastName": get_col_val("EnglishLastName", 7),
                         "JapaneseName": get_col_val("JapaneseName", 9),
                         "ExamEndTime": get_col_val("ExamEndTime", 12),
                         "VoucherCode": voucher_input
                     }
+
                     
                     st.success(f"✅ Credentials verified for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
                     
