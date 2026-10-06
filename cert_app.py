@@ -101,4 +101,121 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     # 2. Japanese Name (Yuji Ryuko)
     if has_yuji:
-        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16
+        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, fontfile=yuji_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, color=(0, 0, 0))
+    
+    # 3. Exam Date (Times New Roman)
+    if has_times:
+        page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontfile=times_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontname="Times-Roman", color=(0, 0, 0))
+    
+    # 4. Japanese Kanji Date (Yuji Ryuko)
+    if has_yuji:
+        page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, fontfile=yuji_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, color=(0, 0, 0))
+    
+    # 5. Voucher Code (Times New Roman)
+    if has_times:
+        page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontfile=times_font_path, color=(0, 0, 0))
+    else:
+        page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontname="Times-Roman", color=(0, 0, 0))
+    
+    doc.save(output_pdf_path)
+    
+    # Convert PDF first page to PNG image for on-screen preview
+    preview_image_path = output_pdf_path.replace(".pdf", ".png")
+    pix = page.get_pixmap(dpi=150)
+    pix.save(preview_image_path)
+    
+    doc.close()
+    return output_pdf_path, preview_image_path
+
+# ==========================================
+# Streamlit UI App Layout
+# ==========================================
+st.markdown("<h1 style='text-align: center;'>📜 Shisa Kanko-Shi Certificate Portal</h1>", unsafe_allow_html=True)
+st.write("Please enter your registered **Email Address** and **Voucher Code** below to retrieve and view your official certificate.")
+
+with st.form("cert_lookup_form"):
+    # Email field first
+    email_input = st.text_input("Registered Email Address:", placeholder="e.g., candidate@example.com").strip()
+    # Voucher code field second
+    voucher_input = st.text_input("Voucher Code:", placeholder="e.g., SK00001TEST").strip()
+    
+    submit_btn = st.form_submit_button("🔍 Look Up & Generate Certificate", use_container_width=True)
+
+if submit_btn:
+    if not email_input or not voucher_input:
+        st.warning("⚠️ Please provide both your Email Address and Voucher Code.")
+    else:
+        with st.spinner("Verifying credentials against examination database..."):
+            try:
+                db = get_sheets_connection()
+                sheet = db.worksheet("Vouchers")
+                records = sheet.get_all_records()
+                
+                matched_record = None
+                for row in records:
+                    v_code = str(row.get("VoucherCode", row.get("Voucher Code", ""))).strip()
+                    c_email = str(row.get("Email", row.get("CandidateEmail", row.get("Candidate Email", "")))).strip()
+                    
+                    # Match both Voucher Code and Email (case-insensitive for email)
+                    if v_code.upper() == voucher_input.upper() and c_email.lower() == email_input.lower():
+                        matched_record = row
+                        break
+                
+                if matched_record:
+                    headers = sheet.row_values(1)
+                    cell = sheet.find(voucher_input)
+                    row_vals = sheet.row_values(cell.row) if cell else []
+                    
+                    def get_col_val(col_name_keyword, col_index_1_based):
+                        for idx, h in enumerate(headers):
+                            if col_name_keyword.lower() in h.lower():
+                                if idx < len(row_vals):
+                                    return row_vals[idx]
+                        if col_index_1_based - 1 < len(row_vals):
+                            return row_vals[col_index_1_based - 1]
+                        return ""
+
+                    candidate_data = {
+                        "EnglishFirstName": get_col_val("EnglishFirstName", 6),
+                        "EnglishLastName": get_col_val("EnglishLastName", 7),
+                        "JapaneseName": get_col_val("JapaneseName", 9),
+                        "ExamEndTime": get_col_val("ExamEndTime", 12),
+                        "VoucherCode": voucher_input
+                    }
+                    
+                    st.success(f"✅ Credentials verified for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
+                    
+                    template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
+                    output_filename = f"Certificate_{voucher_input}.pdf"
+                    
+                    if not os.path.exists(template_filename):
+                        st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
+                    else:
+                        generated_pdf_path, preview_image_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
+                        
+                        st.markdown("---")
+                        st.markdown("### 🖥️ Certificate Preview")
+                        st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
+                        
+                        with open(generated_pdf_path, "rb") as pdf_file:
+                            pdf_bytes = pdf_file.read()
+                            
+                        st.markdown("---")
+                        st.download_button(
+                            label="📥 Download Official Certificate (PDF)",
+                            data=pdf_bytes,
+                            file_name=output_filename,
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+                else:
+                    st.error("❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct.")
+            
+            except Exception as e:
+                st.error(f"An error occurred while connecting to the database: {e}")
