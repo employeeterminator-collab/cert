@@ -16,7 +16,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 # ==========================================
 st.set_page_config(
     page_title="Shisa Kanko-Shi Certificate Portal",
-    page_icon="📜",
+    page_icon="Icon1.png",
     layout="centered"
 )
 
