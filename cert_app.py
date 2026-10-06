@@ -1,9 +1,15 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz  # PyMuPDF (只用來把 PDF 模板轉成背景圖片)
 import datetime
 import os
 import gspread
 from google.oauth2.service_account import Credentials
+
+# ReportLab imports
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 # ==========================================
 # Page Configuration
@@ -70,78 +76,90 @@ def convert_to_japanese_date(date_str):
     return f"令和{year_kanji}年{month_kanji}月{day_kanji}日"
 
 # ==========================================
-# PDF Certificate Generator Function
+# PDF Certificate Generator Function (ReportLab)
 # ==========================================
 def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data):
-    doc = fitz.open(template_pdf_path)
-    page = doc[0]  # Single page certificate template
+    # 1. 先用 PyMuPDF 把 PDF 模板的第一頁轉成暫存背景圖片，確保原設計不變
+    doc_fitz = fitz.open(template_pdf_path)
+    page_fitz = doc_fitz[0]
+    pix = page_fitz.get_pixmap(dpi=300) # 高解像度背景
+    bg_image_path = "temp_cert_bg.png"
+    pix.save(bg_image_path)
     
+    # 取得原 PDF 頁面大小 (Points)
+    rect = page_fitz.rect
+    pdf_width, pdf_height = rect.width, rect.height
+    doc_fitz.close()
+
+    # 2. 註冊自訂字型到 ReportLab
+    times_font_path = "times.ttf"
+    yuji_font_path = "YujiSyuku.ttf"
+    
+    if os.path.exists(times_font_path):
+        pdfmetrics.registerFont(TTFont('TimesNewRoman', times_font_path))
+    else:
+        pdfmetrics.registerFont(TTFont('TimesNewRoman', 'Helvetica')) # Fallback
+        
+    if os.path.exists(yuji_font_path):
+        pdfmetrics.registerFont(TTFont('YujiSyuku', yuji_font_path))
+    else:
+        pdfmetrics.registerFont(TTFont('YujiSyuku', 'Helvetica')) # Fallback
+
+    # 3. 準備數據
     first_name = str(candidate_data.get('EnglishFirstName', '')).strip()
     last_name = str(candidate_data.get('EnglishLastName', '')).strip()
     english_name = f"{first_name} {last_name}".strip()
-    if not english_name or english_name == "":
-        english_name = "Candidate Name"
-        
+    
     japanese_name = str(candidate_data.get('JapaneseName', '')).strip()
-    if not japanese_name:
-        japanese_name = "受講者 氏名"  # Fallback sample text if empty
-        
     exam_end_time = str(candidate_data.get('ExamEndTime', datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
     voucher_code = str(candidate_data.get('VoucherCode', '')).strip()
     
     jp_date_str = convert_to_japanese_date(exam_end_time)
-    
-    # Custom font file paths
-    times_font_path = "times.ttf"          # Times New Roman for English
-    yuji_font_path = "YujiSyuku-Regular.ttf"       # Yuji Syuku for Japanese[span_0](start_span)[span_0](end_span)
-    
-    has_times = os.path.exists(times_font_path)
-    has_yuji = os.path.exists(yuji_font_path)
 
-    # Register fonts to the page resource dictionary
-    if has_times:
-        page.insert_font(fontname="F1", fontfile=times_font_path)
-    if has_yuji:
-        page.insert_font(fontname="F2", fontfile=yuji_font_path)
+    # 4. 使用 ReportLab 建立新 PDF 並繪製背景與文字
+    c = canvas.Canvas(output_pdf_path, pagesize=(pdf_width, pdf_height))
+    
+    # 貼上背景圖 (佔滿整頁)
+    c.drawImage(bg_image_path, 0, 0, width=pdf_width, height=pdf_height)
+    
+    # 注意：ReportLab 的座標原點 (0,0) 在「左下角」，跟 PyMuPDF 有時由上往下不同。
+    # 如果原本 PyMuPDF 的 Y 座標是從上往下數的，轉換成 ReportLab 需要用：pdf_height - Y
+    # 這裡我們根據你的實際版面微調座標：
+    
+    # English Name
+    c.setFont('TimesNewRoman', 16)
+    c.drawString(320, pdf_height - 480, english_name)
+    
+    # Japanese Name (YujiSyuku)
+    c.setFont('YujiSyuku', 16)
+    c.drawString(320, pdf_height - 520, japanese_name)
+    
+    # Exam Date
+    c.setFont('TimesNewRoman', 12)
+    c.drawString(320, pdf_height - 560, exam_end_time)
+    
+    # Japanese Kanji Date (YujiSyuku)
+    c.setFont('YujiSyuku', 12)
+    c.drawString(320, pdf_height - 600, jp_date_str)
+    
+    # Voucher Code
+    c.setFont('TimesNewRoman', 11)
+    c.drawString(450, pdf_height - 640, voucher_code)
+    
+    c.save()
+    
+    # 5. 清理暫存背景圖
+    if os.path.exists(bg_image_path):
+        os.remove(bg_image_path)
 
-    # 1. English Name (Using standard font or F1)
-    if has_times:
-        page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="F1", color=(0, 0, 0))
-    else:
-        page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="Times-Roman", color=(0, 0, 0))
-    
-    # 2. Japanese Name (Using Yuji Syuku F2)
-    if has_yuji:
-        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, fontname="F2", color=(0, 0, 0))
-    else:
-        page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, color=(0, 0, 0))
-    
-    # 3. Exam Date
-    if has_times:
-        page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontname="F1", color=(0, 0, 0))
-    else:
-        page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontname="Times-Roman", color=(0, 0, 0))
-    
-    # 4. Japanese Kanji Date
-    if has_yuji:
-        page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, fontname="F2", color=(0, 0, 0))
-    else:
-        page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, color=(0, 0, 0))
-    
-    # 5. Voucher Code
-    if has_times:
-        page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontname="F1", color=(0, 0, 0))
-    else:
-        page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontname="Times-Roman", color=(0, 0, 0))
-    
-    doc.save(output_pdf_path)
-    
-    # Convert PDF first page to PNG image for on-screen preview
+    # 6. 為了前端 Streamlit 預覽，把生成的 PDF 第一頁再轉成 PNG
+    doc_out = fitz.open(output_pdf_path)
+    page_out = doc_out[0]
+    preview_pix = page_out.get_pixmap(dpi=150)
     preview_image_path = output_pdf_path.replace(".pdf", ".png")
-    pix = page.get_pixmap(dpi=150)
-    pix.save(preview_image_path)
+    preview_pix.save(preview_image_path)
+    doc_out.close()
     
-    doc.close()
     return output_pdf_path, preview_image_path
 
 # ==========================================
@@ -175,9 +193,6 @@ if submit_btn:
                         break
                 
                 if matched_record:
-                    # Show raw row keys so you can verify exact header names in Google Sheets
-                    st.write("🔍 Raw Sheet Row Keys Found:", list(matched_record.keys()))
-                    
                     candidate_data = {
                         "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
                         "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
@@ -186,7 +201,6 @@ if submit_btn:
                         "VoucherCode": voucher_input
                     }
                     
-                    st.write("📋 Mapped Candidate Data:", candidate_data)
                     st.success(f"✅ Credentials verified successfully!")
                     
                     template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
