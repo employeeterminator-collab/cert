@@ -214,7 +214,7 @@ if submit_btn:
                         "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
                         "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
                         "JapaneseName": str(matched_record.get("JapaneseName", matched_record.get("Japanese Name", ""))).strip(),
-                        "ExamEndTime": str(matched_record.get("ExamEndTime", matched_record.get("Exam End Time", datetime.datetime.now().strftime("%Y-%m-%d")))).strip(),
+                        "ExamEndTime": formatted_exam_end_time,  # 👈 將處理好的乾淨日期帶入這裡
                         "VoucherCode": voucher_input
                     }
                     
