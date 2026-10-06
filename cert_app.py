@@ -4,6 +4,7 @@ import datetime
 import os
 import gspread
 from google.oauth2.service_account import Credentials
+from PIL import Image, PngImagePlugin
 
 # ReportLab imports
 from reportlab.lib.pagesizes import letter, landscape
@@ -11,6 +12,28 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+ 
+
+def embed_badge_metadata(template_path, output_path, voucher_code):
+    """
+    不修改圖片畫面，僅將 Voucher Code 內嵌進 PNG 檔案的 Metadata 中
+    """
+    if not os.path.exists(template_path):
+        return None
+        
+    # 直接開啟原始徽章模板
+    img = Image.open(template_path)
+    
+    # 建立 PNG 專屬的 Metadata (文字區塊)
+    metadata = PngImagePlugin.PngInfo()
+    metadata.add_text("VoucherCode", voucher_code)
+    metadata.add_text("Issuer", "Shisa Kanko-Shi Promotion Institute")
+    metadata.add_text("CredentialType", "Digital Badge")
+    
+    # 儲存時帶入 pnginfo，將資料完美封裝進二進位檔案中
+    img.save(output_path, "PNG", pnginfo=metadata)
+    
+    return output_path
 # ==========================================
 # Page Configuration
 # ==========================================
@@ -297,3 +320,32 @@ if submit_btn:
             
             except Exception as e:
                 st.error(f"An error occurred while connecting to the database: {e}")
+
+# --- 數位徽章：僅內嵌 Metadata 並提供下載 ---
+badge_template = "CSCP-Badge.png"  # 你的原始徽章底圖檔名
+badge_output_filename = f"CSCP-Badge-{voucher_input}.png"
+
+generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
+
+if generated_badge_path and os.path.exists(generated_badge_path):
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 顯示原始圖片預覽（畫面上保持乾淨，無多餘文字）
+    st.image(generated_badge_path, width=250, caption="Official Digital Badge (Metadata Embedded)")
+    
+    with open(generated_badge_path, "rb") as badge_file:
+        badge_bytes = badge_file.read()
+        
+    st.download_button(
+        label=f"📥 Download Digital Badge ({badge_output_filename})",
+        data=badge_bytes,
+        file_name=badge_output_filename,
+        mime="image/png",
+        use_container_width=True
+    )
+    
+    # 清理暫存檔案
+    try:
+        os.remove(generated_badge_path)
+    except Exception:
+        pass
