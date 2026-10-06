@@ -157,17 +157,8 @@ if submit_btn:
                 sheet = db.worksheet("Vouchers")
                 records = sheet.get_all_records()
                 
-                matched_record = None
-                for row in records:
-                    v_code = str(row.get("VoucherCode", row.get("Voucher Code", ""))).strip()
-                    c_email = str(row.get("Email", row.get("CandidateEmail", row.get("Candidate Email", "")))).strip()
-                    
-                    # Match both Voucher Code and Email (case-insensitive for email)
-                    if v_code.upper() == voucher_input.upper() and c_email.lower() == email_input.lower():
-                        matched_record = row
-                        break
                 
-                                matched_record = None
+                matched_record = None
                 for row in records:
                     v_code = str(row.get("VoucherCode", row.get("Voucher Code", ""))).strip()
                     
@@ -180,7 +171,7 @@ if submit_btn:
                         break
 
 
-                                        candidate_data = {
+                     candidate_data = {
                         "EnglishFirstName": get_col_val("EnglishFirstName", 6),
                         "EnglishLastName": get_col_val("EnglishLastName", 7),
                         "JapaneseName": get_col_val("JapaneseName", 9),
