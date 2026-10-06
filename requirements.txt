@@ -3,4 +3,4 @@ PyMuPDF
 reportlab
 gspread
 google-auth
-PIL
+
