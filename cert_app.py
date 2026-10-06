@@ -157,7 +157,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     draw_vertical_text(c, x=834, y_center=pdf_height - 320, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
-    c.setFont(times_font_name, 12)
+    c.setFont(times_font_name, 16)
     c.drawCentredString(180, pdf_height - 520, exam_end_time)
     
     # 4. 令和日期 (直書置中，font_size=12 是字型大小
