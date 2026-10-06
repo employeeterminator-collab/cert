@@ -187,7 +187,12 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
 # ==========================================
 # Streamlit UI App Layout
 # ==========================================
-st.markdown("<h1 style='text-align: center;'>📜 Shisa Kanko-Shi Certificate Portal</h1>", unsafe_allow_html=True)
+st.markdown("""
+    <div style='text-align: center;'>
+        <img src='app/static/Icon1.png' width='60' style='vertical-align: middle; margin-right: 10px;'>
+        <h1 style='display: inline-block; vertical-align: middle; margin: 0;'>Shisa Kanko-Shi Certificate Portal</h1>
+    </div>
+""", unsafe_allow_html=True)
 st.write("Please enter your registered **Email Address** and **Voucher Code** below to retrieve and view your official certificate.")
 
 with st.form("cert_lookup_form"):
