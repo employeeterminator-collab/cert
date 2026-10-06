@@ -135,18 +135,18 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     # ==========================================
     
     # 1. 英文名字 (改用 drawCentredString 實現水平置中，font_size 可自行調整)
-    c.setFont(times_font_name, 36)  # 數字 16 是字型大小
-    c.drawCentredString(260, pdf_height -240, english_name)  # 320 是置中 X 軸
+    c.setFont(times_font_name, 33)  # 數字 16 是字型大小
+    c.drawCentredString(270, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
-    draw_vertical_text(c, x=1020, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
+    draw_vertical_text(c, x=800, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
-    c.drawCentredString(180, pdf_height - 550, exam_end_time)
+    c.drawCentredString(180, pdf_height - 500, exam_end_time)
     
     # 4. 令和日期 (直書置中，font_size=12 是字型大小)
-    draw_vertical_text(c, x=600, y_top=pdf_height - 350, text=jp_date_str, font_name=yuji_font_name, font_size=24, char_spacing=14)
+    draw_vertical_text(c, x=640, y_top=pdf_height - 350, text=jp_date_str, font_name=yuji_font_name, font_size=24, char_spacing=14)
     
     # 5. 證書編號 (橫書置中)
     c.setFont(times_font_name, 11)
