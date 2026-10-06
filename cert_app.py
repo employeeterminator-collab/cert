@@ -283,6 +283,7 @@ if submit_btn:
                             st.markdown("---")
                             st.download_button(
                                 label="📥 Download Official Certificate (PDF)",
+                                st.markdown("---"),
                                 data=pdf_bytes,
                                 file_name=output_filename,
                                 mime="application/pdf",
