@@ -200,6 +200,16 @@ if submit_btn:
                         break
                 
                 if matched_record:
+                    # 處理考試日期（去除時間，保留 YYYY-MM-DD 格式）
+                    raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
+                    try:
+                    # 切出前面的日期部分（例如把 "2026-10-05 18:51:42" 變成 "2026-10-05"）
+                       date_part = raw_date.split()[0]
+                       dt = datetime.datetime.strptime(date_part, "%Y-%m-%d")
+                       exam_end_time = dt.strftime("%Y-%m-%d")
+                    except Exception:
+                       exam_end_time = raw_date.split()[0] if raw_date else ""
+
                     candidate_data = {
                         "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
                         "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
