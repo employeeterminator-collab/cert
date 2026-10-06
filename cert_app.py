@@ -268,6 +268,35 @@ if submit_btn:
                     elif exam_status == "fail":
                         st.error("❌ Record not found or invalid voucher code.")
                     elif exam_status == "pass":
+                        # --- 數位徽章：僅內嵌 Metadata 並提供下載 ---
+                        badge_template = "CSCP-Badge.png"  # 你的原始徽章底圖檔名
+                        badge_output_filename = f"CSCP-Badge-{voucher_input}.png"
+                        
+                        generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
+                        
+                        if generated_badge_path and os.path.exists(generated_badge_path):
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            
+                            # 顯示原始圖片預覽（畫面上保持乾淨，無多餘文字）
+                            st.image(generated_badge_path, width=250, caption="Official Digital Badge (Metadata Embedded)")
+                            
+                            with open(generated_badge_path, "rb") as badge_file:
+                                badge_bytes = badge_file.read()
+                                
+                            st.download_button(
+                                label=f"📥 Download Digital Badge ({badge_output_filename})",
+                                data=badge_bytes,
+                                file_name=badge_output_filename,
+                                mime="image/png",
+                                use_container_width=True
+                            )
+                            
+                            # 清理暫存檔案
+                            try:
+                                os.remove(generated_badge_path)
+                            except Exception:
+                                pass
+
                         # 只有 Pass 才會執行後續的資料處理與證書生成
                         raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
                         formatted_exam_end_time = raw_date.split()[0] if raw_date else datetime.datetime.now().strftime("%Y-%m-%d")
@@ -321,31 +350,3 @@ if submit_btn:
             except Exception as e:
                 st.error(f"An error occurred while connecting to the database: {e}")
 
-# --- 數位徽章：僅內嵌 Metadata 並提供下載 ---
-badge_template = "CSCP-Badge.png"  # 你的原始徽章底圖檔名
-badge_output_filename = f"CSCP-Badge-{voucher_input}.png"
-
-generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
-
-if generated_badge_path and os.path.exists(generated_badge_path):
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # 顯示原始圖片預覽（畫面上保持乾淨，無多餘文字）
-    st.image(generated_badge_path, width=250, caption="Official Digital Badge (Metadata Embedded)")
-    
-    with open(generated_badge_path, "rb") as badge_file:
-        badge_bytes = badge_file.read()
-        
-    st.download_button(
-        label=f"📥 Download Digital Badge ({badge_output_filename})",
-        data=badge_bytes,
-        file_name=badge_output_filename,
-        mime="image/png",
-        use_container_width=True
-    )
-    
-    # 清理暫存檔案
-    try:
-        os.remove(generated_badge_path)
-    except Exception:
-        pass
