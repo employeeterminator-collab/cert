@@ -78,13 +78,24 @@ def convert_to_japanese_date(date_str):
 # ==========================================
 # 輔助函式：日文直書 (Vertical Writing)
 # ==========================================
-def draw_vertical_text(c, x, y_top, text, font_name, font_size, char_spacing=None):
+# 輔助函式：日文直書 (同時支援水平置中與垂直置中)
+def draw_vertical_text(c, x, y_center, text, font_name, font_size, char_spacing=None):
     if char_spacing is None:
         char_spacing = font_size * 1.1  # 字與字之間的垂直距離
+    
+    num_chars = len(text)
+    # 計算整段直書文字的總高度（從第一個字到最後一個字的距離）
+    total_height = (num_chars - 1) * char_spacing
+    
+    # 自動反推計算起點 y_top，讓整個字串的中心剛好落在傳入的 y_center
+    y_top = y_center + (total_height / 2)
+    
     c.setFont(font_name, font_size)
     for idx, char in enumerate(text):
         y_pos = y_top - (idx * char_spacing)
-        c.drawString(x, y_pos, char)
+        # 橫向水平置中 (以 x 座標為中心)
+        char_width = c.stringWidth(char, font_name, font_size)
+        c.drawString(x - (char_width / 2), y_pos, char)
 
 # ==========================================
 # PDF Certificate Generator Function (ReportLab)
@@ -139,7 +150,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c.drawCentredString(275, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
-    draw_vertical_text(c, x=814, y_top=pdf_height - 320, text=japanese_name, font_name=yuji_font_name, font_size=36)
+    draw_vertical_text(c, x=814, y_center=pdf_height - 320, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
