@@ -57,7 +57,7 @@ def convert_to_japanese_date(date_str):
             return kanji_numbers[n]
         if n < 100:
             tens = n // 10
-            ones = n % n
+            ones = n % 10
             tens_str = '十' if tens == 1 else kanji_numbers[tens] + '十'
             ones_str = kanji_numbers[ones] if ones > 0 else ''
             return tens_str + ones_str
@@ -99,31 +99,31 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     if has_yuji:
         page.insert_font(fontname="F2", fontfile=yuji_font_path)
 
-    # 1. English Name (Times New Roman)
+    # 1. English Name
     if has_times:
         page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="F1", color=(0, 0, 0))
     else:
         page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="Times-Roman", color=(0, 0, 0))
     
-    # 2. Japanese Name (Yuji Syuku)
+    # 2. Japanese Name
     if has_yuji:
         page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, fontname="F2", color=(0, 0, 0))
     else:
         page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, color=(0, 0, 0))
     
-    # 3. Exam Date (Times New Roman)
+    # 3. Exam Date
     if has_times:
         page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontname="F1", color=(0, 0, 0))
     else:
         page.insert_text(fitz.Point(320, 560), exam_end_time, fontsize=12, fontname="Times-Roman", color=(0, 0, 0))
     
-    # 4. Japanese Kanji Date (Yuji Syuku)
+    # 4. Japanese Kanji Date
     if has_yuji:
         page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, fontname="F2", color=(0, 0, 0))
     else:
         page.insert_text(fitz.Point(320, 600), jp_date_str, fontsize=12, color=(0, 0, 0))
     
-    # 5. Voucher Code (Times New Roman)
+    # 5. Voucher Code
     if has_times:
         page.insert_text(fitz.Point(450, 640), voucher_code, fontsize=11, fontname="F1", color=(0, 0, 0))
     else:
@@ -178,9 +178,18 @@ if submit_btn:
                         for idx, h in enumerate(headers):
                             if col_name_keyword.lower() in h.lower():
                                 if idx < len(row_vals):
-                                    return row_vals[idx]
+                                    val = str(row_vals[idx]).strip()
+                                    if val:
+                                        return val
+                        # Fallback to matched_record dict keys directly
+                        for k, v in matched_record.items():
+                            if col_name_keyword.lower() in k.lower():
+                                val = str(v).strip()
+                                if val:
+                                    return val
+                        # Fallback to absolute index position if header keyword fails
                         if col_index_1_based - 1 < len(row_vals):
-                            return row_vals[col_index_1_based - 1]
+                            return str(row_vals[col_index_1_based - 1]).strip()
                         return ""
 
                     candidate_data = {
@@ -190,6 +199,9 @@ if submit_btn:
                         "ExamEndTime": get_col_val("ExamEndTime", 12),
                         "VoucherCode": voucher_input
                     }
+                    
+                    # Debug helper inside Streamlit to see what values were pulled from Google Sheets
+                    st.write("Debug Fetched Data:", candidate_data)
                     
                     st.success(f"✅ Credentials verified for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
                     
