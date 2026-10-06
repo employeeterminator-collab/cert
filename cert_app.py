@@ -139,7 +139,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c.drawCentredString(275, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
-    draw_vertical_text(c, x=812, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
+    draw_vertical_text(c, x=814, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
@@ -222,8 +222,8 @@ if submit_btn:
                     
                     st.success(f"✅ Credentials verified successfully!")
                     
-                    template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
-                    output_filename = f"Certificate_{voucher_input}.pdf"
+                    template_filename = "CSCP Certificate Template Final.pdf"
+                    output_filename = f"CSCP_Certificate_{voucher_input}.pdf"
                     
                     if not os.path.exists(template_filename):
                         st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
