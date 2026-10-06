@@ -88,7 +88,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     # Custom font file paths
     times_font_path = "times.ttf"          # Times New Roman for English
-    yuji_font_path = "YujiSyuku.ttf"       # Yuji Syuku for Japanese[span_0](start_span)[span_0](end_span)
+    yuji_font_path = "YujiSyuku-Regular.ttf"  # Yuji Syuku for Japanese[span_0](start_span)[span_0](end_span)
     
     has_times = os.path.exists(times_font_path)
     has_yuji = os.path.exists(yuji_font_path)
