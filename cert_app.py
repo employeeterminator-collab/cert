@@ -306,7 +306,8 @@ if st.session_state.lookup_result:
             b_col1, b_col2, b_col3 = st.columns([1, 2, 1])
             with b_col2:
                 st.image(generated_badge_path, use_column_width=True, caption="Personalized Official Badge")
-                
+                st.write("You can upload to our badge verifier to validate the holder of this badge")
+
                 with open(generated_badge_path, "rb") as badge_file:
                     badge_bytes = badge_file.read()
                     
