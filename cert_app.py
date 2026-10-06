@@ -214,7 +214,7 @@ if submit_btn:
                         matched_record = row
                         break
                 
-  if matched_record:
+                if matched_record:
                     # 檢查考試狀態 (對應欄位 exam_status)
                     exam_status = str(matched_record.get("ExamStatus", matched_record.get("exam_status", ""))).strip().lower()
                     
