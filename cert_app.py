@@ -79,8 +79,13 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     first_name = str(candidate_data.get('EnglishFirstName', '')).strip()
     last_name = str(candidate_data.get('EnglishLastName', '')).strip()
     english_name = f"{first_name} {last_name}".strip()
-    
+    if not english_name or english_name == "":
+        english_name = "Candidate Name"
+        
     japanese_name = str(candidate_data.get('JapaneseName', '')).strip()
+    if not japanese_name:
+        japanese_name = "受講者 氏名"  # Fallback sample text if empty
+        
     exam_end_time = str(candidate_data.get('ExamEndTime', datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
     voucher_code = str(candidate_data.get('VoucherCode', '')).strip()
     
@@ -88,24 +93,24 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     
     # Custom font file paths
     times_font_path = "times.ttf"          # Times New Roman for English
-    yuji_font_path = "YujiSyuku-Regular.ttf"  # Yuji Syuku for Japanese[span_0](start_span)[span_0](end_span)
+    yuji_font_path = "YujiSyuku.ttf"       # Yuji Syuku for Japanese[span_0](start_span)[span_0](end_span)
     
     has_times = os.path.exists(times_font_path)
     has_yuji = os.path.exists(yuji_font_path)
 
-    # Register fonts to the page resource dictionary properly for MuPDF/PyMuPDF
+    # Register fonts to the page resource dictionary
     if has_times:
         page.insert_font(fontname="F1", fontfile=times_font_path)
     if has_yuji:
         page.insert_font(fontname="F2", fontfile=yuji_font_path)
 
-    # 1. English Name
+    # 1. English Name (Using standard font or F1)
     if has_times:
         page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="F1", color=(0, 0, 0))
     else:
         page.insert_text(fitz.Point(320, 480), english_name, fontsize=16, fontname="Times-Roman", color=(0, 0, 0))
     
-    # 2. Japanese Name
+    # 2. Japanese Name (Using Yuji Syuku F2)
     if has_yuji:
         page.insert_text(fitz.Point(320, 520), japanese_name, fontsize=16, fontname="F2", color=(0, 0, 0))
     else:
@@ -170,40 +175,19 @@ if submit_btn:
                         break
                 
                 if matched_record:
-                    headers = sheet.row_values(1)
-                    cell = sheet.find(voucher_input)
-                    row_vals = sheet.row_values(cell.row) if cell else []
+                    # Show raw row keys so you can verify exact header names in Google Sheets
+                    st.write("🔍 Raw Sheet Row Keys Found:", list(matched_record.keys()))
                     
-                    def get_col_val(col_name_keyword, col_index_1_based):
-                        for idx, h in enumerate(headers):
-                            if col_name_keyword.lower() in h.lower():
-                                if idx < len(row_vals):
-                                    val = str(row_vals[idx]).strip()
-                                    if val:
-                                        return val
-                        # Fallback to matched_record dict keys directly
-                        for k, v in matched_record.items():
-                            if col_name_keyword.lower() in k.lower():
-                                val = str(v).strip()
-                                if val:
-                                    return val
-                        # Fallback to absolute index position if header keyword fails
-                        if col_index_1_based - 1 < len(row_vals):
-                            return str(row_vals[col_index_1_based - 1]).strip()
-                        return ""
-
                     candidate_data = {
-                        "EnglishFirstName": get_col_val("EnglishFirstName", 6),
-                        "EnglishLastName": get_col_val("EnglishLastName", 7),
-                        "JapaneseName": get_col_val("JapaneseName", 9),
-                        "ExamEndTime": get_col_val("ExamEndTime", 12),
+                        "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
+                        "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
+                        "JapaneseName": str(matched_record.get("JapaneseName", matched_record.get("Japanese Name", ""))).strip(),
+                        "ExamEndTime": str(matched_record.get("ExamEndTime", matched_record.get("Exam End Time", datetime.datetime.now().strftime("%Y-%m-%d")))).strip(),
                         "VoucherCode": voucher_input
                     }
                     
-                    # Debug helper inside Streamlit to see what values were pulled from Google Sheets
-                    st.write("Debug Fetched Data:", candidate_data)
-                    
-                    st.success(f"✅ Credentials verified for **{candidate_data['EnglishFirstName']} {candidate_data['EnglishLastName']}**!")
+                    st.write("📋 Mapped Candidate Data:", candidate_data)
+                    st.success(f"✅ Credentials verified successfully!")
                     
                     template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
                     output_filename = f"Certificate_{voucher_input}.pdf"
