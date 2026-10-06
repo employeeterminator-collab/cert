@@ -187,12 +187,28 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
 # ==========================================
 # Streamlit UI App Layout
 # ==========================================
-st.markdown("""
-    <div style='text-align: center;'>
-        <img src='Icon1.png' width='60' style='vertical-align: middle; margin-right: 10px;'>
-        <h1 style='display: inline-block; vertical-align: middle; margin: 0;'>Shisa Kanko-Shi Certificate Portal</h1>
-    </div>
-""", unsafe_allow_html=True)
+import base64
+
+# 讀取並轉換圖片為 Base64
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    return ""
+
+img_base64 = get_base64_image("Icon1.png")
+
+# 顯示帶有 Logo 的標題
+if img_base64:
+    st.markdown(f"""
+        <div style='text-align: center;'>
+            <img src='data:image/png;base64,{img_base64}' width='60' style='vertical-align: middle; margin-right: 10px;'>
+            <h1 style='display: inline-block; vertical-align: middle; margin: 0;'>Shisa Kanko-Shi Certificate Portal</h1>
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("<h1 style='text-align: center;'>Shisa Kanko-Shi Certificate Portal</h1>", unsafe_allow_html=True)
 st.write("Please enter your registered **Email Address** and **Voucher Code** below to retrieve and view your official certificate.")
 
 with st.form("cert_lookup_form"):
