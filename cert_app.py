@@ -150,7 +150,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     # ==========================================
     
     # 1. 英文名字 (改用 drawCentredString 實現水平置中，font_size 可自行調整)
-    c.setFont(times_font_name, 33)  # 數字 16 是字型大小
+    c.setFont(times_font_name, 30)  # 數字 16 是字型大小
     c.drawCentredString(300, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
