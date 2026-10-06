@@ -199,7 +199,7 @@ if submit_btn:
                         matched_record = row
                         break
                 
-                    if matched_record:
+                if matched_record:
                     # 👉 先取得原始日期，並預設一個安全的乾淨日期
                     raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
                     formatted_exam_end_time = raw_date.split()[0] if raw_date else datetime.datetime.now().strftime("%Y-%m-%d")
