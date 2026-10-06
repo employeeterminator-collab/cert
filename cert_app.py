@@ -139,7 +139,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c.drawCentredString(275, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
-    draw_vertical_text(c, x=810, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
+    draw_vertical_text(c, x=812, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
@@ -199,24 +199,26 @@ if submit_btn:
                         matched_record = row
                         break
                 
-                if matched_record:
-                    # 處理考試日期（去除時間，保留 YYYY-MM-DD 格式）
+                    if matched_record:
+                    # 👉 先取得原始日期，並預設一個安全的乾淨日期
                     raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
+                    formatted_exam_end_time = raw_date.split()[0] if raw_date else datetime.datetime.now().strftime("%Y-%m-%d")
+                    
                     try:
-                    # 切出前面的日期部分（例如把 "2026-10-05 18:51:42" 變成 "2026-10-05"）
-                       date_part = raw_date.split()[0]
-                       dt = datetime.datetime.strptime(date_part, "%Y-%m-%d")
-                       exam_end_time = dt.strftime("%Y-%m-%d")
+                        date_part = raw_date.split()[0]
+                        dt = datetime.datetime.strptime(date_part, "%Y-%m-%d")
+                        formatted_exam_end_time = dt.strftime("%Y-%m-%d")  # 成功解析則格式化為 YYYY-MM-DD
                     except Exception:
-                       exam_end_time = raw_date.split()[0] if raw_date else ""
+                        pass  # 若解析失敗，就維持剛才預設的字串
 
                     candidate_data = {
                         "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
                         "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
                         "JapaneseName": str(matched_record.get("JapaneseName", matched_record.get("Japanese Name", ""))).strip(),
-                        "ExamEndTime": formatted_exam_end_time,  # 👈 將處理好的乾淨日期帶入這裡
+                        "ExamEndTime": formatted_exam_end_time,  # 帶入處理好的日期
                         "VoucherCode": voucher_input
                     }
+
                     
                     st.success(f"✅ Credentials verified successfully!")
                     
