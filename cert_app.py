@@ -20,18 +20,12 @@ def embed_badge_metadata(template_path, output_path, voucher_code):
     if not os.path.exists(template_path):
         return None
         
-    # 直接開啟原始徽章模板
     img = Image.open(template_path)
-    
-    # 建立 PNG 專屬的 Metadata (文字區塊)
     metadata = PngImagePlugin.PngInfo()
     metadata.add_text("VoucherCode", voucher_code)
     metadata.add_text("Issuer", "Shisa Kanko-Shi Promotion Institute")
     metadata.add_text("CredentialType", "Digital Badge")
-    
-    # 儲存時帶入 pnginfo，將資料完美封裝進二進位檔案中
     img.save(output_path, "PNG", pnginfo=metadata)
-    
     return output_path
 
 # ==========================================
@@ -212,6 +206,12 @@ else:
     st.markdown("<h1 style='text-align: center;'>Shisa Kanko-Shi Certificate Portal</h1>", unsafe_allow_html=True)
 st.write("Please enter your registered **Email Address** and **Voucher Code** below to retrieve and view your official certificate.")
 
+# 初始化 Session State 來保存查詢成功的狀態
+if "lookup_result" not in st.session_state:
+    st.session_state.lookup_result = None
+if "error_message" not in st.session_state:
+    st.session_state.error_message = None
+
 with st.form("cert_lookup_form"):
     email_input = st.text_input("Registered Email Address:", placeholder="e.g., candidate@example.com").strip()
     voucher_input = st.text_input("Voucher Code:", placeholder="e.g., SK00001TEST").strip()
@@ -219,7 +219,8 @@ with st.form("cert_lookup_form"):
 
 if submit_btn:
     if not email_input or not voucher_input:
-        st.warning("⚠️ Please provide both your Email Address and Voucher Code.")
+        st.session_state.lookup_result = None
+        st.session_state.error_message = "⚠️ Please provide both your Email Address and Voucher Code."
     else:
         matched_record = None
         exam_status = ""
@@ -241,52 +242,23 @@ if submit_btn:
                 if matched_record:
                     exam_status = str(matched_record.get("ExamStatus", matched_record.get("exam_status", ""))).strip().lower()
             except Exception as e:
-                st.error(f"An error occurred while connecting to the database: {e}")
+                st.session_state.lookup_result = None
+                st.session_state.error_message = f"An error occurred while connecting to the database: {e}"
 
-        # 根據驗證狀態在畫面上渲染結果
+        # 根據驗證狀態更新 session_state
         if not matched_record:
-            st.error("❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct.")
+            st.session_state.lookup_result = None
+            st.session_state.error_message = "❌ No matching record found. Please verify that both your Email Address and Voucher Code are correct."
         elif exam_status == "dnf":
-            st.error("Exam did not finish, please contact administrator")
+            st.session_state.lookup_result = None
+            st.session_state.error_message = "Exam did not finish, please contact administrator"
         elif exam_status == "fail":
-            st.error("❌ Record not found or invalid voucher code.")
+            st.session_state.lookup_result = None
+            st.session_state.error_message = "❌ Record not found or invalid voucher code."
         elif exam_status == "pass":
-            st.success("✅ Credentials verified successfully!")
+            st.session_state.error_message = None
             
-            # 1. 處理數位徽章下載
-            badge_template = "CPCS-Badge.png"
-            badge_output_filename = f"CPCS-Badge-{voucher_input}.png"
-            
-            if os.path.exists(badge_template):
-                generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
-                if generated_badge_path and os.path.exists(generated_badge_path):
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.markdown("### 🛡️ Official Digital Badge")
-                    
-                    # 建立三欄排版，讓徽章置中在中間欄位
-                    b_col1, b_col2, b_col3 = st.columns([1, 2, 1])
-                    with b_col2:
-                        st.image(generated_badge_path, width=250, caption="Personalized Official Badge")
-                        
-                        with open(generated_badge_path, "rb") as badge_file:
-                            badge_bytes = badge_file.read()
-                            
-                        st.download_button(
-                            label=f"📥 Download Digital Badge",
-                            data=badge_bytes,
-                            file_name=badge_output_filename,
-                            mime="image/png",
-                            use_container_width=True
-                        )
-                    
-                    try:
-                        os.remove(generated_badge_path)
-                    except Exception:
-                        pass
-            else:
-                st.warning(f"⚠️ Badge template file '{badge_template}' not found in repository root. Badge download skipped.")
-
-            # 2. 處理 PDF 證書生成與預覽
+            # 準備候選人資料存入 session_state
             raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
             formatted_exam_end_time = raw_date.split()[0] if raw_date else datetime.datetime.now().strftime("%Y-%m-%d")
             
@@ -297,37 +269,84 @@ if submit_btn:
             except Exception:
                 pass
 
-            candidate_data = {
+            st.session_state.lookup_result = {
                 "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
                 "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
                 "JapaneseName": str(matched_record.get("JapaneseName", matched_record.get("Japanese Name", ""))).strip(),
                 "ExamEndTime": formatted_exam_end_time,
                 "VoucherCode": voucher_input
             }
+        else:
+            st.session_state.lookup_result = None
+            st.session_state.error_message = "❌ Record not found or invalid voucher code."
+
+# ==========================================
+# 渲染結果畫面（從 Session State 讀取，即使按了下載按鈕也不會消失）
+# ==========================================
+if st.session_state.error_message:
+    st.error(st.session_state.error_message)
+
+if st.session_state.lookup_result:
+    candidate_data = st.session_state.lookup_result
+    voucher_input = candidate_data["VoucherCode"]
+    
+    st.success(f"✅ Credentials verified successfully!")
+
+    # 1. 處理數位徽章下載（置中對齊）
+    badge_template = "CSCP-Badge.png"
+    badge_output_filename = f"CSCP-Badge-{voucher_input}.png"
+    
+    if os.path.exists(badge_template):
+        generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
+        if generated_badge_path and os.path.exists(generated_badge_path):
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### 🛡️ Official Digital Badge")
             
-            template_filename = "CSCP Certificate Template Final.pdf"
-            output_filename = f"CPCS_Certificate_{voucher_input}.pdf"
-            
-            if not os.path.exists(template_filename):
-                st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
-            else:
-                generated_pdf_path, preview_image_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
+            # 三欄排版讓徽章與下載按鈕完美置中
+            b_col1, b_col2, b_col3 = st.columns([1, 2, 1])
+            with b_col2:
+                st.image(generated_badge_path, width=250, caption="Metadata Embedded Badge")
                 
-                st.markdown("---")
-                st.markdown("### 🖥️ Certificate Preview")
-                st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
-                
-                with open(generated_pdf_path, "rb") as pdf_file:
-                    pdf_bytes = pdf_file.read()
+                with open(generated_badge_path, "rb") as badge_file:
+                    badge_bytes = badge_file.read()
                     
-                st.markdown("---")
                 st.download_button(
-                    label="📥 Download Official Certificate (PDF)",
-                    data=pdf_bytes,
-                    file_name=output_filename,
-                    mime="application/pdf",
+                    label=f"📥 Download Digital Badge",
+                    data=badge_bytes,
+                    file_name=badge_output_filename,
+                    mime="image/png",
                     use_container_width=True
                 )
-                st.markdown("---")
-        else:
-            st.error("❌ Record not found or invalid voucher code.")
+            
+            try:
+                os.remove(generated_badge_path)
+            except Exception:
+                pass
+    else:
+        st.warning(f"⚠️ Badge template file '{badge_template}' not found in repository root. Badge download skipped.")
+
+    # 2. 處理 PDF 證書生成與預覽
+    template_filename = "CSCP Certificate Template Final.pdf"
+    output_filename = f"CSCP_Certificate_{voucher_input}.pdf"
+    
+    if not os.path.exists(template_filename):
+        st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
+    else:
+        generated_pdf_path, preview_image_path = generate_certificate_pdf(template_filename, output_filename, candidate_data)
+        
+        st.markdown("---")
+        st.markdown("### 🖥️ Certificate Preview")
+        st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
+        
+        with open(generated_pdf_path, "rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
+            
+        st.markdown("---")
+        st.download_button(
+            label="📥 Download Official Certificate (PDF)",
+            data=pdf_bytes,
+            file_name=output_filename,
+            mime="application/pdf",
+            use_container_width=True
+        )
+        st.markdown("---")
