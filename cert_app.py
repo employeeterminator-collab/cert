@@ -261,18 +261,24 @@ if submit_btn:
                 generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
                 if generated_badge_path and os.path.exists(generated_badge_path):
                     st.markdown("<br>", unsafe_allow_html=True)
-                    st.image(generated_badge_path, width=250, caption="Official Digital Badge (Metadata Embedded)")
+                    st.markdown("### 🛡️ Official Digital Badge")
                     
-                    with open(generated_badge_path, "rb") as badge_file:
-                        badge_bytes = badge_file.read()
+                    # 建立三欄排版，讓徽章置中在中間欄位
+                    b_col1, b_col2, b_col3 = st.columns([1, 2, 1])
+                    with b_col2:
+                        st.image(generated_badge_path, width=250, caption="Personalized Official Badge")
                         
-                    st.download_button(
-                        label=f"📥 Download Digital Badge ({badge_output_filename})",
-                        data=badge_bytes,
-                        file_name=badge_output_filename,
-                        mime="image/png",
-                        use_container_width=True
-                    )
+                        with open(generated_badge_path, "rb") as badge_file:
+                            badge_bytes = badge_file.read()
+                            
+                        st.download_button(
+                            label=f"📥 Download Digital Badge",
+                            data=badge_bytes,
+                            file_name=badge_output_filename,
+                            mime="image/png",
+                            use_container_width=True
+                        )
+                    
                     try:
                         os.remove(generated_badge_path)
                     except Exception:
