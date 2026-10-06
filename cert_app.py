@@ -283,12 +283,12 @@ if submit_btn:
                             st.markdown("---")
                             st.download_button(
                                 label="📥 Download Official Certificate (PDF)",
-                                st.markdown("---"),
                                 data=pdf_bytes,
                                 file_name=output_filename,
                                 mime="application/pdf",
                                 use_container_width=True
                             )
+                            st.markdown("---")
                     else:
                         st.error("❌ Record not found or invalid voucher code.")
                 else:
