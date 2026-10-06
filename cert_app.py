@@ -76,10 +76,21 @@ def convert_to_japanese_date(date_str):
     return f"令和{year_kanji}年{month_kanji}月{day_kanji}日"
 
 # ==========================================
+# 輔助函式：日文直書 (Vertical Writing)
+# ==========================================
+def draw_vertical_text(c, x, y_top, text, font_name, font_size, char_spacing=None):
+    if char_spacing is None:
+        char_spacing = font_size * 1.1  # 字與字之間的垂直距離
+    c.setFont(font_name, font_size)
+    for idx, char in enumerate(text):
+        y_pos = y_top - (idx * char_spacing)
+        c.drawString(x, y_pos, char)
+
+# ==========================================
 # PDF Certificate Generator Function (ReportLab)
 # ==========================================
 def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data):
-    # 1. 先用 PyMuPDF 把 PDF 模板的第一頁轉成暫存背景圖片
+    # 1. 用 PyMuPDF 把 PDF 模板的第一頁轉成暫存背景圖片
     doc_fitz = fitz.open(template_pdf_path)
     page_fitz = doc_fitz[0]
     pix = page_fitz.get_pixmap(dpi=300)
@@ -90,16 +101,16 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     pdf_width, pdf_height = rect.width, rect.height
     doc_fitz.close()
 
-    # 2. 安全註冊自訂字型，若無則使用 ReportLab 內建標準字型
+    # 2. 安全註冊自訂字型
     times_font_path = "times.ttf"
     yuji_font_path = "YujiSyuku-Regular.ttf"
     
-    times_font_name = 'Times-Roman'  # 預設內建
+    times_font_name = 'Times-Roman'
     if os.path.exists(times_font_path):
         pdfmetrics.registerFont(TTFont('CustomTimes', times_font_path))
         times_font_name = 'CustomTimes'
         
-    yuji_font_name = 'Helvetica'      # 預設內建 Fallback
+    yuji_font_name = 'Helvetica'
     if os.path.exists(yuji_font_path):
         pdfmetrics.registerFont(TTFont('YujiSyuku', yuji_font_path))
         yuji_font_name = 'YujiSyuku'
@@ -119,23 +130,27 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c = canvas.Canvas(output_pdf_path, pagesize=(pdf_width, pdf_height))
     c.drawImage(bg_image_path, 0, 0, width=pdf_width, height=pdf_height)
     
-    # English Name
+    # ==========================================
+    # 座標調整區 (可根據你的證書版面隨時微調數值)
+    # ==========================================
+    
+    # 1. English Name (橫書)
     c.setFont(times_font_name, 16)
     c.drawString(320, pdf_height - 480, english_name)
     
-    # Japanese Name (YujiSyuku)
-    c.setFont(yuji_font_name, 16)
-    c.drawString(320, pdf_height - 520, japanese_name)
+    # 2. Japanese Name (直書) -> 你可以在這裡調整 X 座標與 Y 頂部起始點
+    # X 座標控制左右，pdf_height - Y 控制上下起始位置
+    draw_vertical_text(c, x=320, y_top=pdf_height - 520, text=japanese_name, font_name=yuji_font_name, font_size=16)
     
-    # Exam Date
+    # 3. Exam Date (橫書)
     c.setFont(times_font_name, 12)
     c.drawString(320, pdf_height - 560, exam_end_time)
     
-    # Japanese Kanji Date (YujiSyuku)
+    # 4. Japanese Kanji Date (橫書，如果你想這行也直書，可改用 draw_vertical_text)
     c.setFont(yuji_font_name, 12)
     c.drawString(320, pdf_height - 600, jp_date_str)
     
-    # Voucher Code
+    # 5. Voucher Code (橫書)
     c.setFont(times_font_name, 11)
     c.drawString(450, pdf_height - 640, voucher_code)
     
