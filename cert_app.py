@@ -143,6 +143,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
 
     # 4. 使用 ReportLab 建立新 PDF 並繪製背景與文字
     c = canvas.Canvas(output_pdf_path, pagesize=(pdf_width, pdf_height))
+    c.setTitle(f"Shisa Kanko-Shi Certificate - {voucher_code}")
     c.drawImage(bg_image_path, 0, 0, width=pdf_width, height=pdf_height)
     
         # ==========================================
