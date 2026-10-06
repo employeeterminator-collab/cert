@@ -138,17 +138,15 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c.setFont(times_font_name, 16)
     c.drawString(320, pdf_height - 480, english_name)
     
-    # 2. Japanese Name (直書) -> 你可以在這裡調整 X 座標與 Y 頂部起始點
-    # X 座標控制左右，pdf_height - Y 控制上下起始位置
+    # 2. Japanese Name (直書)
     draw_vertical_text(c, x=320, y_top=pdf_height - 520, text=japanese_name, font_name=yuji_font_name, font_size=16)
     
-    # 3. Exam Date (橫書)
+    # 3. Exam Date (西元日期，維持橫書或依需要調整)
     c.setFont(times_font_name, 12)
     c.drawString(320, pdf_height - 560, exam_end_time)
     
-    # 4. Japanese Kanji Date (橫書，如果你想這行也直書，可改用 draw_vertical_text)
-    c.setFont(yuji_font_name, 12)
-    c.drawString(320, pdf_height - 600, jp_date_str)
+    # 4. Japanese Kanji Date (令和日期 -> 已改為直書)
+    draw_vertical_text(c, x=260, y_top=pdf_height - 590, text=jp_date_str, font_name=yuji_font_name, font_size=12, char_spacing=14)
     
     # 5. Voucher Code (橫書)
     c.setFont(times_font_name, 11)
