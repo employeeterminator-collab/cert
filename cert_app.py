@@ -214,25 +214,45 @@ if submit_btn:
                         matched_record = row
                         break
                 
-                if matched_record:
-                    # 👉 先取得原始日期，並預設一個安全的乾淨日期
-                    raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
-                    formatted_exam_end_time = raw_date.split()[0] if raw_date else datetime.datetime.now().strftime("%Y-%m-%d")
+  if matched_record:
+                    # 檢查考試狀態 (對應欄位 exam_status)
+                    exam_status = str(matched_record.get("ExamStatus", matched_record.get("exam_status", ""))).strip().lower()
                     
-                    try:
-                        date_part = raw_date.split()[0]
-                        dt = datetime.datetime.strptime(date_part, "%Y-%m-%d")
-                        formatted_exam_end_time = dt.strftime("%Y-%m-%d")  # 成功解析則格式化為 YYYY-MM-DD
-                    except Exception:
-                        pass  # 若解析失敗，就維持剛才預設的字串
+                    if exam_status == "dnf":
+                        st.error("Exam did not finish, please contact administrator")
+                    elif exam_status == "fail":
+                        st.error("❌ Record not found or invalid voucher code.")  # Fail 顯示與找不到記錄相同的訊息
+                    elif exam_status == "pass":
+                        # 只有 Pass 才會執行後續的資料處理與證書生成
+                        raw_date = str(matched_record.get("ExamEndTime", datetime.datetime.now().strftime("%Y-%m-%d"))).strip()
+                        formatted_exam_end_time = raw_date.split()[0] if raw_date else datetime.datetime.now().strftime("%Y-%m-%d")
+                        
+                        try:
+                            date_part = raw_date.split()[0]
+                            dt = datetime.datetime.strptime(date_part, "%Y-%m-%d")
+                            formatted_exam_end_time = dt.strftime("%Y-%m-%d")
+                        except Exception:
+                            pass
 
-                    candidate_data = {
-                        "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
-                        "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
-                        "JapaneseName": str(matched_record.get("JapaneseName", matched_record.get("Japanese Name", ""))).strip(),
-                        "ExamEndTime": formatted_exam_end_time,  # 帶入處理好的日期
-                        "VoucherCode": voucher_input
-                    }
+                        candidate_data = {
+                            "EnglishFirstName": str(matched_record.get("EnglishFirstName", matched_record.get("First Name", ""))).strip(),
+                            "EnglishLastName": str(matched_record.get("EnglishLastName", matched_record.get("Last Name", ""))).strip(),
+                            "JapaneseName": str(matched_record.get("JapaneseName", matched_record.get("Japanese Name", ""))).strip(),
+                            "ExamEndTime": formatted_exam_end_time,
+                            "VoucherCode": voucher_input
+                        }
+                        
+                        st.success(f"✅ Credentials verified successfully!")
+                        
+                        # 👉 接下來放你的 PDF 生成與預覽按鈕程式碼
+                        # template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
+                        # ...
+                        
+                    else:
+                        # 若狀態欄位為空或格式不符，也當作未找到記錄處理
+                        st.error("❌ Record not found or invalid voucher code.")
+                else:
+                    st.error("❌ Record not found or invalid voucher code.")
 
                     
                     st.success(f"✅ Credentials verified successfully!")
