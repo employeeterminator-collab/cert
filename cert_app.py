@@ -79,31 +79,30 @@ def convert_to_japanese_date(date_str):
 # PDF Certificate Generator Function (ReportLab)
 # ==========================================
 def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data):
-    # 1. 先用 PyMuPDF 把 PDF 模板的第一頁轉成暫存背景圖片，確保原設計不變
+    # 1. 先用 PyMuPDF 把 PDF 模板的第一頁轉成暫存背景圖片
     doc_fitz = fitz.open(template_pdf_path)
     page_fitz = doc_fitz[0]
-    pix = page_fitz.get_pixmap(dpi=300) # 高解像度背景
+    pix = page_fitz.get_pixmap(dpi=300)
     bg_image_path = "temp_cert_bg.png"
     pix.save(bg_image_path)
     
-    # 取得原 PDF 頁面大小 (Points)
     rect = page_fitz.rect
     pdf_width, pdf_height = rect.width, rect.height
     doc_fitz.close()
 
-    # 2. 註冊自訂字型到 ReportLab
+    # 2. 安全註冊自訂字型，若無則使用 ReportLab 內建標準字型
     times_font_path = "times.ttf"
     yuji_font_path = "YujiSyuku.ttf"
     
+    times_font_name = 'Times-Roman'  # 預設內建
     if os.path.exists(times_font_path):
-        pdfmetrics.registerFont(TTFont('TimesNewRoman', times_font_path))
-    else:
-        pdfmetrics.registerFont(TTFont('TimesNewRoman', 'Helvetica')) # Fallback
+        pdfmetrics.registerFont(TTFont('CustomTimes', times_font_path))
+        times_font_name = 'CustomTimes'
         
+    yuji_font_name = 'Helvetica'      # 預設內建 Fallback
     if os.path.exists(yuji_font_path):
         pdfmetrics.registerFont(TTFont('YujiSyuku', yuji_font_path))
-    else:
-        pdfmetrics.registerFont(TTFont('YujiSyuku', 'Helvetica')) # Fallback
+        yuji_font_name = 'YujiSyuku'
 
     # 3. 準備數據
     first_name = str(candidate_data.get('EnglishFirstName', '')).strip()
@@ -118,32 +117,26 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
 
     # 4. 使用 ReportLab 建立新 PDF 並繪製背景與文字
     c = canvas.Canvas(output_pdf_path, pagesize=(pdf_width, pdf_height))
-    
-    # 貼上背景圖 (佔滿整頁)
     c.drawImage(bg_image_path, 0, 0, width=pdf_width, height=pdf_height)
     
-    # 注意：ReportLab 的座標原點 (0,0) 在「左下角」，跟 PyMuPDF 有時由上往下不同。
-    # 如果原本 PyMuPDF 的 Y 座標是從上往下數的，轉換成 ReportLab 需要用：pdf_height - Y
-    # 這裡我們根據你的實際版面微調座標：
-    
     # English Name
-    c.setFont('TimesNewRoman', 16)
+    c.setFont(times_font_name, 16)
     c.drawString(320, pdf_height - 480, english_name)
     
     # Japanese Name (YujiSyuku)
-    c.setFont('YujiSyuku', 16)
+    c.setFont(yuji_font_name, 16)
     c.drawString(320, pdf_height - 520, japanese_name)
     
     # Exam Date
-    c.setFont('TimesNewRoman', 12)
+    c.setFont(times_font_name, 12)
     c.drawString(320, pdf_height - 560, exam_end_time)
     
     # Japanese Kanji Date (YujiSyuku)
-    c.setFont('YujiSyuku', 12)
+    c.setFont(yuji_font_name, 12)
     c.drawString(320, pdf_height - 600, jp_date_str)
     
     # Voucher Code
-    c.setFont('TimesNewRoman', 11)
+    c.setFont(times_font_name, 11)
     c.drawString(450, pdf_height - 640, voucher_code)
     
     c.save()
@@ -152,7 +145,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     if os.path.exists(bg_image_path):
         os.remove(bg_image_path)
 
-    # 6. 為了前端 Streamlit 預覽，把生成的 PDF 第一頁再轉成 PNG
+    # 6. 轉成 PNG 預覽
     doc_out = fitz.open(output_pdf_path)
     page_out = doc_out[0]
     preview_pix = page_out.get_pixmap(dpi=150)
