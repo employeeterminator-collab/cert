@@ -46,7 +46,7 @@ def convert_to_japanese_date(date_str):
     month = dt.month
     day = dt.day
     
-    reiwa_year = year - 2019
+    reiwa_year = year - 2018
     
     kanji_numbers = {
         0: '〇', 1: '一', 2: '二', 3: '三', 4: '四',
@@ -139,14 +139,14 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c.drawCentredString(270, pdf_height -250, english_name)  # 320 是置中 X 軸
     
     # 2. 日文名字 (直書置中，font_size=16 是字型大小)
-    draw_vertical_text(c, x=805, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
+    draw_vertical_text(c, x=810, y_top=pdf_height - 120, text=japanese_name, font_name=yuji_font_name, font_size=36)
     
     # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
-    c.drawCentredString(180, pdf_height - 530, exam_end_time)
+    c.drawCentredString(180, pdf_height - 520, exam_end_time)
     
-    # 4. 令和日期 (直書置中，font_size=12 是字型大小)
-    draw_vertical_text(c, x=640, y_top=pdf_height - 350, text=jp_date_str, font_name=yuji_font_name, font_size=24, char_spacing=18)
+    # 4. 令和日期 (直書置中，font_size=12 是字型大小
+    draw_vertical_text(c, x=640, y_top=pdf_height - 350, text=jp_date_str, font_name=yuji_font_name, font_size=24, char_spacing=23)
     
     # 5. 證書編號 (橫書置中)
     c.setFont(times_font_name, 11)
