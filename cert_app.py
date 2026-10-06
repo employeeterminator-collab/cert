@@ -130,27 +130,28 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
     c = canvas.Canvas(output_pdf_path, pagesize=(pdf_width, pdf_height))
     c.drawImage(bg_image_path, 0, 0, width=pdf_width, height=pdf_height)
     
-    # ==========================================
-    # 座標調整區 (可根據你的證書版面隨時微調數值)
+        # ==========================================
+    # 座標與格式調整區
     # ==========================================
     
-    # 1. English Name (橫書)
-    c.setFont(times_font_name, 16)
-    c.drawString(320, pdf_height - 480, english_name)
+    # 1. 英文名字 (改用 drawCentredString 實現水平置中，font_size 可自行調整)
+    c.setFont(times_font_name, 36)  # 數字 16 是字型大小
+    c.drawCentredString(130, pdf_height - 80, english_name)  # 320 是置中 X 軸
     
-    # 2. Japanese Name (直書)
+    # 2. 日文名字 (直書置中，font_size=16 是字型大小)
     draw_vertical_text(c, x=320, y_top=pdf_height - 520, text=japanese_name, font_name=yuji_font_name, font_size=16)
     
-    # 3. Exam Date (西元日期，維持橫書或依需要調整)
+    # 3. 英文考試日期 (橫書置中)
     c.setFont(times_font_name, 12)
-    c.drawString(320, pdf_height - 560, exam_end_time)
+    c.drawCentredString(320, pdf_height - 560, exam_end_time)
     
-    # 4. Japanese Kanji Date (令和日期 -> 已改為直書)
+    # 4. 令和日期 (直書置中，font_size=12 是字型大小)
     draw_vertical_text(c, x=260, y_top=pdf_height - 590, text=jp_date_str, font_name=yuji_font_name, font_size=12, char_spacing=14)
     
-    # 5. Voucher Code (橫書)
+    # 5. 證書編號 (橫書置中)
     c.setFont(times_font_name, 11)
-    c.drawString(450, pdf_height - 640, voucher_code)
+    c.drawCentredString(550, pdf_height - 740, voucher_code)
+
     
     c.save()
     
