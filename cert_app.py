@@ -294,7 +294,7 @@ if st.session_state.lookup_result:
 
     # 1. 處理數位徽章下載（置中對齊）
     badge_template = "CSCP-Badge.png"
-    badge_output_filename = f"CSCP-Badge-{voucher_input}.png"
+    badge_output_filename = f"CPCS-Badge-{voucher_input}.png"
     
     if os.path.exists(badge_template):
         generated_badge_path = embed_badge_metadata(badge_template, badge_output_filename, voucher_input)
@@ -327,7 +327,7 @@ if st.session_state.lookup_result:
 
     # 2. 處理 PDF 證書生成與預覽
     template_filename = "CSCP Certificate Template Final.pdf"
-    output_filename = f"CSCP_Certificate_{voucher_input}.pdf"
+    output_filename = f"CPCS_Certificate_{voucher_input}.pdf"
     
     if not os.path.exists(template_filename):
         st.error(f"❌ Certificate template file '{template_filename}' not found in your repository root.")
