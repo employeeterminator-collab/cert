@@ -203,7 +203,7 @@ img_base64 = get_base64_image("Icon1.png")
 if img_base64:
     st.markdown(f"""
         <div style='text-align: center;'>
-            <img src='data:image/png;base64,{img_base64}' width='60' style='vertical-align: middle; margin-right: 10px;'>
+            <img src='data:image/png;base64,{img_base64}' width='120' style='vertical-align: middle; margin-right: 10px;'>
             <h1 style='display: inline-block; vertical-align: middle; margin: 0;'>Shisa Kanko-Shi Certificate Portal</h1>
         </div>
     """, unsafe_allow_html=True)
