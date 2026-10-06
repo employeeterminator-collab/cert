@@ -189,7 +189,7 @@ def generate_certificate_pdf(template_pdf_path, output_pdf_path, candidate_data)
 # ==========================================
 st.markdown("""
     <div style='text-align: center;'>
-        <img src='app/static/Icon1.png' width='60' style='vertical-align: middle; margin-right: 10px;'>
+        <img src='Icon1.png' width='60' style='vertical-align: middle; margin-right: 10px;'>
         <h1 style='display: inline-block; vertical-align: middle; margin: 0;'>Shisa Kanko-Shi Certificate Portal</h1>
     </div>
 """, unsafe_allow_html=True)
