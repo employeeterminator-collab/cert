@@ -244,7 +244,7 @@ if submit_btn:
                         
                         st.success(f"✅ Credentials verified successfully!")
                         
-                        template_filename = "CSCP Sample (20261005) TEMPLATE.pdf"
+                        template_filename = "CSCP Certificate Template Final.pdf"
                         output_filename = f"CSCP_Certificate_{voucher_input}.pdf"
                         
                         if not os.path.exists(template_filename):
