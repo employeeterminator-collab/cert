@@ -317,7 +317,7 @@ if st.session_state.lookup_result:
             # 三欄排版讓徽章與下載按鈕完美置中
             b_col1, b_col2, b_col3 = st.columns([1, 2, 1])
             with b_col2:
-                st.image(generated_badge_path, use_column_width=True, caption="Personalized Official Badge")
+                st.image(generated_badge_path, width="stretch", caption="Personalized Official Badge")
                
 
                 with open(generated_badge_path, "rb") as badge_file:
@@ -349,7 +349,7 @@ if st.session_state.lookup_result:
         
         st.markdown("---")
         st.markdown("### 🖥️ Certificate Preview")
-        st.image(preview_image_path, caption="Official Certificate Preview", use_column_width=True)
+        st.image(preview_image_path, caption="Official Certificate Preview", width="stretch")
         
         with open(generated_pdf_path, "rb") as pdf_file:
             pdf_bytes = pdf_file.read()
