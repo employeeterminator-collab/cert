@@ -6,6 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from PIL import Image, PngImagePlugin
 import base64
+import json
 
 # ReportLab imports
 from reportlab.lib.pagesizes import letter, landscape
@@ -45,10 +46,19 @@ def get_sheets_connection():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds_dict = dict(st.secrets["gcp_service_account"])
+    # Read service account from environment variable or fallback to st.secrets for local use
+    creds_json = os.getenv("GCP_SERVICE_ACCOUNT")
+    if creds_json:
+        creds_dict = json.loads(creds_json)
+    else:
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
-    return client.open("ShisaKanko_Exam_Database")
+    
+    # Use open_by_key with your SPREADSHEET_ID environment variable
+    spreadsheet_id = os.getenv("SPREADSHEET_ID")
+    return client.open_by_key(spreadsheet_id)
 
 # ==========================================
 # Date Conversion Helper (西元轉令和漢字日期)
