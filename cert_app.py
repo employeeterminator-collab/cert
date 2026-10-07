@@ -62,7 +62,7 @@ def get_sheets_connection():
       st.error(
           "Error: SPREADSHEET_ID environment variable is missing in Cloud Run."
       )
-  st.stop()
+      st.stop()
     return client.open_by_key(spreadsheet_id)
 
 # ==========================================
