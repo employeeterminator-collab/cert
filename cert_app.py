@@ -39,6 +39,78 @@ st.set_page_config(
 )
 
 # ==========================================
+# Idle session killer — cost guard (5 min)
+# ==========================================
+# Ends the browser session after 5 minutes with no mouse /
+# keyboard / touch input. 60s before the kill, a full-screen warning with
+# countdown appears; any input cancels it. The kill navigates the top page
+# away, which drops the Streamlit websocket and frees the Cloud Run instance.
+st.components.v1.html(
+    """
+    <script>
+    (function() {
+        var TIMEOUT_MS = 5 * 60 * 1000;
+        var WARN_AT_MS = TIMEOUT_MS - 60 * 1000;
+        var KEY = '__idleLastActivityAtcert';
+        function now() { return Date.now(); }
+        try {
+            if (!parent.window[KEY]) parent.window[KEY] = now();
+            if (parent.window.__idleWatchercert) return;
+            parent.window.__idleWatchercert = true;
+        } catch (e) { return; }
+        function touch() { try { parent.window[KEY] = now(); } catch (e) {} }
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'click', 'scroll'].forEach(function(ev) {
+            try { parent.document.addEventListener(ev, touch, {passive: true}); } catch (e) {}
+        });
+        var warned = false;
+        var overlay = null;
+        var countdownEl = null;
+        function showWarning() {
+            try {
+                overlay = parent.document.createElement('div');
+                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;'
+                    + 'background:rgba(0,0,0,0.85);z-index:2147483647;display:flex;'
+                    + 'align-items:center;justify-content:center;flex-direction:column;'
+                    + 'color:#fff;font-family:sans-serif;text-align:center;padding:24px;box-sizing:border-box;';
+                overlay.innerHTML = '<div style="font-size:22px;font-weight:bold;margin-bottom:12px;">Session expiring due to inactivity</div>'
+                    + '<div style="font-size:15px;opacity:0.9;">No activity detected for 5 minutes.<br>'
+                    + 'This session will end in <span id="__idleCountdown" style="font-weight:bold;">60</span> seconds.<br>'
+                    + 'Move your mouse or press any key to continue.</div>';
+                parent.document.body.appendChild(overlay);
+                countdownEl = overlay.querySelector('#__idleCountdown');
+            } catch (e) {}
+        }
+        function hideWarning() {
+            try { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); } catch (e) {}
+            overlay = null; warned = false;
+        }
+        function killSession() {
+            try {
+                if (overlay) overlay.innerHTML = '<div style="font-size:22px;font-weight:bold;">Session ended</div>'
+                    + '<div style="font-size:15px;opacity:0.9;margin-top:12px;">Closed due to inactivity. You may close this tab.</div>';
+            } catch (e) {}
+            setTimeout(function() {
+                try { parent.window.location.href = 'about:blank'; } catch (e) {}
+            }, 3000);
+        }
+        setInterval(function() {
+            var last;
+            try { last = parent.window[KEY] || now(); } catch (e) { return; }
+            var idle = now() - last;
+            if (idle >= TIMEOUT_MS) { killSession(); return; }
+            if (idle >= WARN_AT_MS && !warned) { warned = true; showWarning(); }
+            if (idle < WARN_AT_MS && warned) { hideWarning(); }
+            if (warned && countdownEl) {
+                countdownEl.textContent = Math.max(0, Math.ceil((TIMEOUT_MS - idle) / 1000));
+            }
+        }, 1000);
+    })();
+    </script>
+    """,
+    height=0,
+)
+
+# ==========================================
 # Google Sheets Connection Helper
 # ==========================================
 def get_sheets_connection():
